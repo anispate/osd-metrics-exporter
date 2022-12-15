@@ -16,6 +16,7 @@ package configmap
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/openshift/cluster-network-operator/pkg/names"
@@ -36,6 +37,7 @@ import (
 const (
 	userCABundleConfigMapName = "user-ca-bundle"
 )
+const EnvClusterID = "CLUSTER_ID"
 
 var log = logf.Log.WithName("controller_configmap")
 
@@ -52,6 +54,10 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	reqLogger.Info("Reconciling ConfigMap")
 
 	// Fetch the ConfigMap openshift-config/user-ca-bundle
+	uuid, ok := os.LookupEnv(EnvClusterID)
+	if !ok || uuid == "" {
+		return ctrl.Result{}, fmt.Errorf("cluster ID unset or returned as empty string")
+	}
 	cfgMap := &corev1.ConfigMap{}
 	ns := names.ADDL_TRUST_BUNDLE_CONFIGMAP_NS
 	err := r.Client.Get(ctx, types.NamespacedName{Namespace: ns, Name: userCABundleConfigMapName}, cfgMap)
@@ -72,7 +78,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		// and handle gracefully rather then causing stacktrace.
 		if strings.Contains(err.Error(), "failed parsing certificate") {
 			reqLogger.Info("failed parsing certificate")
-			r.MetricsAggregator.SetClusterProxyCAValid(false)
+			r.MetricsAggregator.SetClusterProxyCAValid(uuid, false)
 			reqLogger.Info("setting CA valid metric to false")
 			return ctrl.Result{}, nil
 		}
@@ -87,8 +93,8 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	reqLogger.Info(fmt.Sprintf("Found %d cert bundles", countCertBundle))
 	for _, cert := range certBundle {
 		reqLogger.Info(fmt.Sprintf("Certificate Expiry %d", cert.NotAfter.Unix()))
-		r.MetricsAggregator.SetClusterProxyCAExpiry(cert.Subject.String(), cert.NotAfter.UTC().Unix())
-		r.MetricsAggregator.SetClusterProxyCAValid(true)
+		r.MetricsAggregator.SetClusterProxyCAExpiry(uuid, cert.Subject.String(), cert.NotAfter.UTC().Unix())
+		r.MetricsAggregator.SetClusterProxyCAValid(uuid, true)
 	}
 	return ctrl.Result{}, nil
 }

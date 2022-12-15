@@ -33,8 +33,9 @@ import (
 )
 
 const (
-	testName      = "test"
-	testNamespace = "test"
+	testName         = "test"
+	testNamespace    = "test"
+	testEnvClusterID = "test"
 )
 
 func makeTestProxy(name, namespace string, proxySpec openshiftapi.ProxySpec, proxyStatus openshiftapi.ProxyStatus) *openshiftapi.Proxy {

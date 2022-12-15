@@ -88,7 +88,7 @@ func (r *ProxyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		proxyTrustedCA = "1"
 	}
 	// aggregate metrics
-	r.MetricsAggregator.SetClusterProxy(proxyHTTP, proxyHTTPS, proxyTrustedCA, proxyEnabled)
+	r.MetricsAggregator.SetClusterProxy(uuid, proxyHTTP, proxyHTTPS, proxyTrustedCA, proxyEnabled)
 	return ctrl.Result{}, nil
 }
 

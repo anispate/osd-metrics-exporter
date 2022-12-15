@@ -15,6 +15,8 @@ package group
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/openshift/osd-metrics-exporter/controllers/utils"
@@ -36,6 +38,8 @@ const (
 
 var log = logf.Log.WithName("controller_group")
 
+const EnvClusterID = "CLUSTER_ID"
+
 // GroupReconciler reconciles a Group object
 type GroupReconciler struct {
 	client.Client
@@ -50,6 +54,10 @@ func (r *GroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	reqLogger.Info("Reconciling Group")
 
 	// Fetch the Group group
+	uuid, ok := os.LookupEnv(EnvClusterID)
+	if !ok || uuid == "" {
+		return ctrl.Result{}, fmt.Errorf("cluster ID unset or returned as empty string")
+	}
 	group := &userv1.Group{}
 	err := r.Client.Get(ctx, req.NamespacedName, group)
 	if err != nil {
@@ -69,9 +77,9 @@ func (r *GroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				return ctrl.Result{}, err
 			}
 		}
-		r.MetricsAggregator.SetClusterAdmin(len(group.Users) > 0)
+		r.MetricsAggregator.SetClusterAdmin(uuid, len(group.Users) > 0)
 	} else {
-		r.MetricsAggregator.SetClusterAdmin(false)
+		r.MetricsAggregator.SetClusterAdmin(uuid, false)
 		if utils.ContainsString(group.Finalizers, finalizer) {
 			controllerutil.RemoveFinalizer(group, finalizer)
 			if err := r.Client.Update(ctx, group); err != nil {

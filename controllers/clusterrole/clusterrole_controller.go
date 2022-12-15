@@ -18,6 +18,7 @@ package clusterrole
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/openshift/osd-metrics-exporter/controllers/utils"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -30,6 +31,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
+
+const EnvClusterID = "CLUSTER_ID"
 
 var log = logf.Log.WithName("controller_cluster_role")
 
@@ -53,6 +56,10 @@ func (r *ClusterRoleReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	reqLogger.Info("Reconciling ClusterRole")
 
 	// Fetch the ClusterRole instance
+	uuid, ok := os.LookupEnv(EnvClusterID)
+	if !ok || uuid == "" {
+		return ctrl.Result{}, fmt.Errorf("cluster ID unset or returned as empty string")
+	}
 	instance := &rbacv1.ClusterRole{}
 	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
