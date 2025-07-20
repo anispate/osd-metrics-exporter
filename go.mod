@@ -1,8 +1,8 @@
 module github.com/openshift/osd-metrics-exporter
 
-go 1.23.0
+go 1.24.0
 
-toolchain go1.24.1
+toolchain go1.24.4
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/openshift-online/ocm-sdk-go v0.1.469
 	// go get github.com/openshift/api@release-4.12
-	github.com/openshift/api v0.0.0-20250530142525-6ff8c5bc1096
+	github.com/openshift/api v0.0.0-20250718204806-3333746edfbf
 	// go get github.com/openshift/cluster-network-operator@release-4.11
 	github.com/openshift/cluster-network-operator v0.0.0-20250717224834-d751ce56ad3c
 	github.com/openshift/operator-custom-metrics v0.5.0
@@ -18,8 +18,8 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.74.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stretchr/testify v1.10.0
-	k8s.io/api v0.32.3
-	k8s.io/apimachinery v0.32.3
+	k8s.io/api v0.33.2
+	k8s.io/apimachinery v0.33.2
 	k8s.io/client-go v0.32.3
 	sigs.k8s.io/controller-runtime v0.20.3
 )
@@ -93,7 +93,7 @@ require (
 	k8s.io/apiserver v0.32.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9 // indirect
-	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
+	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	sigs.k8s.io/e2e-framework v0.5.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
