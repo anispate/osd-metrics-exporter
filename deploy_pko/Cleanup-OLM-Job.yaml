@@ -77,19 +77,19 @@ spec:
           echo "Deleting CSV for osd-metrics-exporter..."
           oc -n openshift-osd-metrics delete csv -l "operators.coreos.com/osd-metrics-exporter.openshift-osd-metrics" || true
 
-          # Delete Subscription
-          echo "Deleting Subscription for osd-metrics-exporter..."
-          oc -n openshift-osd-metrics delete subscription.operators.coreos.com osd-metrics-exporter || true
+          # Additional OLM resources can be cleaned up after testing:
+          # Uncomment these lines if testing shows they're needed
 
-          # Delete CatalogSource
-          echo "Deleting CatalogSource for osd-metrics-exporter..."
-          oc -n openshift-osd-metrics delete catalogsource.operators.coreos.com osd-metrics-exporter-registry || true
+          # echo "Deleting Subscription for osd-metrics-exporter..."
+          # oc -n openshift-osd-metrics delete subscription.operators.coreos.com osd-metrics-exporter || true
 
-          # Delete OperatorGroup
-          echo "Deleting OperatorGroup for osd-metrics-exporter..."
-          oc -n openshift-osd-metrics delete operatorgroup.operators.coreos.com osd-metrics-exporter || true
+          # echo "Deleting CatalogSource for osd-metrics-exporter..."
+          # oc -n openshift-osd-metrics delete catalogsource.operators.coreos.com osd-metrics-exporter-registry || true
 
-          echo "OLM cleanup complete"
+          # echo "Deleting OperatorGroup for osd-metrics-exporter..."
+          # oc -n openshift-osd-metrics delete operatorgroup.operators.coreos.com osd-metrics-exporter || true
+
+          echo "OLM CSV cleanup complete"
         resources:
           requests:
             cpu: 100m
