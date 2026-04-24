@@ -1,0 +1,131 @@
+---
+# This Job cleans up OLM resources after migrating to PKO
+# Resources cleaned up:
+#   - Subscription
+#   - ClusterServiceVersion (CSV)
+#   - CatalogSource
+#   - OperatorGroup
+#
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: olm-cleanup
+  namespace: openshift-osd-metrics
+  annotations:
+    package-operator.run/phase: cleanup-rbac
+    package-operator.run/collision-protection: IfNoController
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: olm-cleanup
+  namespace: openshift-osd-metrics
+  annotations:
+    package-operator.run/phase: cleanup-rbac
+    package-operator.run/collision-protection: IfNoController
+rules:
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - clusterserviceversions
+      - subscriptions
+      - catalogsources
+      - operatorgroups
+    verbs:
+      - list
+      - get
+      - watch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: olm-cleanup
+  namespace: openshift-osd-metrics
+  annotations:
+    package-operator.run/phase: cleanup-rbac
+    package-operator.run/collision-protection: IfNoController
+roleRef:
+  kind: Role
+  name: olm-cleanup
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: olm-cleanup
+    namespace: openshift-osd-metrics
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: olm-cleanup
+  namespace: openshift-osd-metrics
+  annotations:
+    package-operator.run/phase: cleanup-deploy
+    package-operator.run/collision-protection: IfNoController
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
+    spec:
+      serviceAccountName: olm-cleanup
+      priorityClassName: openshift-user-critical
+      restartPolicy: Never
+      containers:
+        - name: olm-cleanup
+          image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              #!/bin/sh
+              set -euxo pipefail
+
+              ERRORS=""
+              NS="openshift-osd-metrics"
+
+              # Delete Subscription first so OLM cannot recreate the CSV
+              oc -n "$NS" delete subscription.operators.coreos.com osd-metrics-exporter --ignore-not-found=true \
+                || ERRORS="${ERRORS}Failed to delete Subscription. "
+
+              # Delete ClusterServiceVersion(s) - safe now that Subscription is gone
+              oc -n "$NS" delete csv -l "operators.coreos.com/osd-metrics-exporter.${NS}" --ignore-not-found=true \
+                || ERRORS="${ERRORS}Failed to delete CSV. "
+
+              # Delete CatalogSource
+              oc -n "$NS" delete catalogsource.operators.coreos.com osd-metrics-exporter-registry --ignore-not-found=true \
+                || ERRORS="${ERRORS}Failed to delete CatalogSource. "
+
+              # Delete OperatorGroup
+              oc -n "$NS" delete operatorgroup osd-metrics-exporter --ignore-not-found=true \
+                || ERRORS="${ERRORS}Failed to delete OperatorGroup. "
+
+              if [ -n "$ERRORS" ]; then
+                echo "WARNING: OLM cleanup completed with errors: ${ERRORS}"
+                oc create -f - <<EVENTEOF || true
+              apiVersion: v1
+              kind: Event
+              metadata:
+                generateName: olm-cleanup-warning-
+                namespace: ${NS}
+              involvedObject:
+                apiVersion: v1
+                kind: Namespace
+                name: ${NS}
+              reason: OLMCleanupErrors
+              message: "OLM cleanup job completed with errors: ${ERRORS}"
+              type: Warning
+              EVENTEOF
+              fi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi

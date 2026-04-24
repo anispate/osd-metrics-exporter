@@ -33,3 +33,13 @@ spec:
           description: Operator image to deploy
           type: string
           default: None
+test:
+  template:
+  - name: default
+    context:
+      package:
+        metadata:
+          name: osd-metrics-exporter
+          namespace: openshift-osd-metrics
+      config:
+        image: "quay.io/example/osd-metrics-exporter:test"
